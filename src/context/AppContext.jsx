@@ -2,6 +2,23 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AppContext = createContext();
 
+const DEFAULT_COMPANY = {
+  companyName: 'K2C AGRO TECH INDIA PRIVATE LIMITED',
+  gstin: '29AAFCU5055K1Z0',
+  panNumber: 'AAFCU5055K',
+  address: 'Plot No. 123, Agro Tech Park, Pune, Maharashtra - 411057',
+  state: 'Maharashtra',
+  stateCode: '14',
+  email: 'contact@k2cagro.com',
+  mobile: '+91-9876543210',
+  logo: '',
+  bankName: 'State Bank of India',
+  accountNumber: '12345678901234',
+  ifscCode: 'SBIN0001234',
+  upiId: 'k2cagro@sbi',
+  website: 'www.k2cagro.com'
+};
+
 export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) {
@@ -18,7 +35,7 @@ export const AppProvider = ({ children }) => {
 
   const [company, setCompany] = useState(() => {
     const saved = localStorage.getItem('company');
-    return saved ? JSON.parse(saved) : null;
+    return saved ? { ...DEFAULT_COMPANY, ...JSON.parse(saved) } : DEFAULT_COMPANY;
   });
 
   const [customers, setCustomers] = useState(() => {

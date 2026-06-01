@@ -81,11 +81,11 @@ export default function Invoices() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Invoices</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">{invoices.length} total invoices</p>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">Invoices</h1>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{invoices.length} total invoices</p>
           </div>
           <Button
             onClick={() => {
@@ -93,6 +93,7 @@ export default function Invoices() {
               setIsFormOpen(true);
             }}
             icon={Plus}
+            className="w-full sm:w-auto"
           >
             Create Invoice
           </Button>
