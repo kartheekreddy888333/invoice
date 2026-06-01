@@ -5,19 +5,38 @@ import { amountInWords } from '../utils/gstCalculations';
 export default function InvoiceTemplate2({ invoice, company = {} }) {
   if (!invoice) return null;
 
+  const seller = {
+    companyName: 'Company Name',
+    address: 'Address',
+    gstin: 'XX AAXXXXXXXXX X',
+    mobile: '(XXX) XXX-XXXX',
+    bankName: 'Bank Name',
+    accountNumber: 'XXXXX',
+    ifscCode: 'XXXXX',
+    upiId: 'N/A',
+    ...company,
+  };
+
+  const customerData = {
+    name: invoice.customer?.name || invoice.customer?.customerName || invoice.customerName || 'Customer Name',
+    address: invoice.customer?.address || invoice.customerAddress || 'Address',
+    gstin: invoice.customer?.gstin || invoice.customerGstin || 'N/A',
+    mobile: invoice.customer?.mobile || invoice.customer?.mobileNumber || invoice.customerMobile || 'N/A',
+  };
+
   const items = invoice.items || [];
 
   return (
     <div className="bg-white text-gray-800">
       {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 mb-8">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-3 mb-3">
         <div className="flex justify-between items-start max-w-4xl mx-auto">
           <div>
-            <h1 className="text-3xl font-bold mb-1">{company.companyName || 'Company Name'}</h1>
+            <h1 className="text-xl font-bold mb-0.5">{seller.companyName}</h1>
             <div className="text-blue-100 text-sm space-y-1">
-              <p>{company.address || 'Address'}</p>
-              <p>GSTIN: {company.gstin || 'XX AAXXXXXXXXX X'}</p>
-              <p>Phone: {company.phone || '(XXX) XXX-XXXX'}</p>
+              <p>{seller.address}</p>
+              <p>GSTIN: {seller.gstin}</p>
+              <p>Phone: {seller.mobile}</p>
             </div>
           </div>
           <div className="text-right">
@@ -49,19 +68,19 @@ export default function InvoiceTemplate2({ invoice, company = {} }) {
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
             <p className="text-gray-600 text-xs font-bold mb-3 tracking-wide">BILL TO</p>
-            <p className="text-lg font-bold mb-1">{invoice.customerName}</p>
+            <p className="text-lg font-bold mb-1">{customerData.name}</p>
             <div className="text-gray-700 text-sm space-y-1">
-              <p>{invoice.customerAddress || 'Address'}</p>
-              <p>GSTIN: {invoice.customerGstin || 'N/A'}</p>
-              <p>Mobile: {invoice.customerMobile || 'N/A'}</p>
+              <p>{customerData.address}</p>
+              <p>GSTIN: {customerData.gstin}</p>
+              <p>Mobile: {customerData.mobile}</p>
             </div>
           </div>
           <div>
             <p className="text-gray-600 text-xs font-bold mb-3 tracking-wide">SHIP TO</p>
-            <p className="text-lg font-bold mb-1">{invoice.customerName}</p>
+            <p className="text-lg font-bold mb-1">{customerData.name}</p>
             <div className="text-gray-700 text-sm space-y-1">
-              <p>{invoice.customerAddress || 'Address'}</p>
-              <p>Mobile: {invoice.customerMobile || 'N/A'}</p>
+              <p>{customerData.address}</p>
+              <p>Mobile: {customerData.mobile}</p>
             </div>
           </div>
         </div>
@@ -125,10 +144,10 @@ export default function InvoiceTemplate2({ invoice, company = {} }) {
           <div>
             <p className="font-bold text-gray-900 mb-2">Bank Details</p>
             <div className="text-gray-700 space-y-1">
-              <p>{company.bankName || 'Bank Name'}</p>
-              <p>A/C: {company.accountNumber || 'XXXXX'}</p>
-              <p>IFSC: {company.ifscCode || 'XXXXX'}</p>
-              <p>UPI: {company.upiId || 'N/A'}</p>
+              <p>{seller.bankName}</p>
+              <p>A/C: {seller.accountNumber}</p>
+              <p>IFSC: {seller.ifscCode}</p>
+              <p>UPI: {seller.upiId}</p>
             </div>
           </div>
           <div className="text-center text-gray-700">
@@ -139,7 +158,7 @@ export default function InvoiceTemplate2({ invoice, company = {} }) {
           <div className="text-right">
             <p className="mb-12 text-gray-600">_________________</p>
             <p className="font-bold text-gray-900">Authorized By</p>
-            <p className="text-xs text-gray-600 mt-1">{company.companyName}</p>
+            <p className="text-xs text-gray-600 mt-1">{seller.companyName}</p>
           </div>
         </div>
       </div>

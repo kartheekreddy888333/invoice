@@ -71,6 +71,24 @@ export default function InvoiceForm({ invoice, onSave, onCancel }) {
       ...prev,
       customerId,
       customerName: customer?.customerName || '',
+      customer: customer
+        ? {
+            id: customer.id,
+            name: customer.customerName || '',
+            customerName: customer.customerName || '',
+            address: customer.address || '',
+            gstin: customer.gstin || '',
+            mobile: customer.mobileNumber || '',
+            mobileNumber: customer.mobileNumber || '',
+            state: customer.state || '',
+            stateCode: customer.stateCode || '',
+          }
+        : null,
+      customerAddress: customer?.address || '',
+      customerGstin: customer?.gstin || '',
+      customerMobile: customer?.mobileNumber || '',
+      customerState: customer?.state || '',
+      customerStateCode: customer?.stateCode || '',
     }));
   };
 

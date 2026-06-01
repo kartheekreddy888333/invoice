@@ -5,6 +5,31 @@ import { amountInWords } from '../utils/gstCalculations';
 export default function InvoiceTemplate3({ invoice, company = {} }) {
   if (!invoice) return null;
 
+  const seller = {
+    companyName: 'Company Name',
+    address: 'Address',
+    gstin: 'XX AAXXXXXXXXX X',
+    mobile: '(XXX) XXX-XXXX',
+    email: 'email@company.com',
+    state: 'State',
+    stateCode: 'XX',
+    bankName: 'Bank Name',
+    accountNumber: 'XXXXX',
+    ifscCode: 'XXXXX',
+    branch: 'Branch',
+    upiId: 'N/A',
+    ...company,
+  };
+
+  const customerData = {
+    name: invoice.customer?.name || invoice.customer?.customerName || invoice.customerName || 'Customer Name',
+    address: invoice.customer?.address || invoice.customerAddress || 'Address',
+    gstin: invoice.customer?.gstin || invoice.customerGstin || 'N/A',
+    mobile: invoice.customer?.mobile || invoice.customer?.mobileNumber || invoice.customerMobile || 'N/A',
+    state: invoice.customer?.state || invoice.customerState || 'State',
+    stateCode: invoice.customer?.stateCode || invoice.customerStateCode || 'XX',
+  };
+
   const items = invoice.items || [];
   
   const calculateItemGST = (item) => {
@@ -41,11 +66,11 @@ export default function InvoiceTemplate3({ invoice, company = {} }) {
       <div className="border-b-4 border-gray-900 pb-4 mb-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-2xl font-black mb-1">{company.companyName || 'Company Name'}</h1>
+            <h1 className="text-2xl font-black mb-1">{seller.companyName}</h1>
             <div className="border-l-4 border-blue-600 pl-3 text-xs space-y-0.5">
-              <p>{company.address || 'Address'}</p>
-              <p className="font-bold">GSTIN: {company.gstin || 'XX AAXXXXXXXXX X'}</p>
-              <p>Phone: {company.phone || '(XXX) XXX-XXXX'} | Email: {company.email || 'email@company.com'}</p>
+              <p>{seller.address}</p>
+              <p className="font-bold">GSTIN: {seller.gstin}</p>
+              <p>Phone: {seller.mobile} | Email: {seller.email}</p>
             </div>
           </div>
           <div className="text-right">
@@ -79,16 +104,16 @@ export default function InvoiceTemplate3({ invoice, company = {} }) {
       <div className="grid grid-cols-2 gap-6 mb-6 text-xs border-l-4 border-blue-600 pl-4">
         <div>
           <p className="font-black text-gray-700 mb-2">BILL TO:</p>
-          <p className="font-bold text-sm mb-1">{invoice.customerName}</p>
-          <p>{invoice.customerAddress || 'Address'}</p>
-          <p className="font-bold mt-2">GSTIN: {invoice.customerGstin || 'N/A'}</p>
-          <p>Mobile: {invoice.customerMobile || 'N/A'}</p>
+          <p className="font-bold text-sm mb-1">{customerData.name}</p>
+          <p>{customerData.address}</p>
+          <p className="font-bold mt-2">GSTIN: {customerData.gstin}</p>
+          <p>Mobile: {customerData.mobile}</p>
         </div>
         <div>
           <p className="font-black text-gray-700 mb-2">SHIP TO:</p>
-          <p className="font-bold text-sm mb-1">{invoice.customerName}</p>
-          <p>{invoice.customerAddress || 'Address'}</p>
-          <p className="font-bold mt-2">State: {company.state || 'State'}</p>
+          <p className="font-bold text-sm mb-1">{customerData.name}</p>
+          <p>{customerData.address}</p>
+          <p className="font-bold mt-2">State: {customerData.state}</p>
         </div>
       </div>
 
@@ -191,12 +216,11 @@ export default function InvoiceTemplate3({ invoice, company = {} }) {
       <div className="border-t-4 border-gray-900 pt-4 grid grid-cols-3 gap-4 text-xs">
         <div>
           <p className="font-bold mb-2">Bank Details:</p>
-          <p className="text-gray-700 space-y-0.5">
-            <div>{company.bankName || 'Bank Name'}</div>
-            <div>A/C: {company.accountNumber || 'XXXXX'}</div>
-            <div>IFSC: {company.ifscCode || 'XXXXX'}</div>
-            <div>UPI: {company.upiId || 'N/A'}</div>
-          </p>
+           <div><strong>Bank Name:</strong> {seller.bankName}</div>
+           <div><strong>Account No:</strong> {seller.accountNumber}</div>
+           <div><strong>IFSC:</strong> {seller.ifscCode}</div>
+           <div><strong>Branch:</strong> {seller.branch}</div>
+           <div><strong>UPI:</strong> {seller.upiId}</div>
         </div>
         <div className="text-center">
           <p className="font-bold mb-2">Declaration:</p>
@@ -204,7 +228,7 @@ export default function InvoiceTemplate3({ invoice, company = {} }) {
         </div>
         <div className="text-right">
           <p className="mb-6">_________________</p>
-          <p className="font-bold">For {company.companyName}</p>
+            <p className="font-bold">For {seller.companyName}</p>
           <p className="text-gray-600 text-xs mt-1">Authorized Signatory</p>
         </div>
       </div>

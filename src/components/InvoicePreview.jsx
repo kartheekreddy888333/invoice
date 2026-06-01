@@ -22,6 +22,12 @@ export default function InvoicePreview({ invoice }) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const previewRef = useRef(null);
 
+  const PDF_COPIES = [
+    'Original for Recipient',
+    'Duplicate for Transporter',
+    'Triplicate for Supplier',
+  ];
+
   const template = TEMPLATES.find(t => t.id === selectedTemplate);
   const TemplateComponent = template?.component;
 
@@ -34,17 +40,25 @@ export default function InvoicePreview({ invoice }) {
     
     setIsGeneratingPDF(true);
     try {
-      const element = previewRef.current.querySelector('.bg-white');
-      if (!element) {
-        alert('Invoice content not found');
-        setIsGeneratingPDF(false);
-        return;
+      const sourceElement = previewRef.current;
+      const clone = sourceElement.cloneNode(true);
+
+      clone.style.position = 'fixed';
+      clone.style.left = '-10000px';
+      clone.style.top = '0';
+      clone.style.width = `${sourceElement.getBoundingClientRect().width}px`;
+      clone.style.height = 'auto';
+      clone.style.maxHeight = 'none';
+      clone.style.overflow = 'visible';
+      clone.style.backgroundColor = '#ffffff';
+
+      document.body.appendChild(clone);
+
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
       }
 
-      // Get the actual content div
-      const contentDiv = element.querySelector('div') || element;
-      
-      const canvas = await html2canvas(contentDiv, {
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
@@ -52,7 +66,8 @@ export default function InvoicePreview({ invoice }) {
         backgroundColor: '#ffffff',
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      document.body.removeChild(clone);
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -61,23 +76,85 @@ export default function InvoicePreview({ invoice }) {
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
 
-      // Handle multi-page PDFs
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const drawInvoiceImage = (targetPdf) => {
+        const marginX = 8;
+        const labelTop = 8;
+        const labelHeight = 8;
+        const contentTop = labelTop + labelHeight + 2;
+        const contentWidth = pageWidth - marginX * 2;
+        const contentHeight = pageHeight - contentTop - 8;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        targetPdf.setFontSize(11);
+        targetPdf.setFont('helvetica', 'bold');
+        targetPdf.setTextColor(30, 41, 59);
+
+        if (imgHeight <= contentHeight) {
+          const y = contentTop + ((contentHeight - imgHeight) / 2);
+          targetPdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginX, y, contentWidth, imgHeight);
+          return;
+        }
+
+        const pageHeightPx = Math.floor((canvas.width * contentHeight) / contentWidth);
+        let renderedHeight = 0;
+        let pageIndex = 0;
+
+        while (renderedHeight < canvas.height) {
+          const pageCanvas = document.createElement('canvas');
+          const pageCtx = pageCanvas.getContext('2d');
+          const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
+
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceHeight;
+
+          if (pageCtx) {
+            pageCtx.fillStyle = '#ffffff';
+            pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            pageCtx.drawImage(
+              canvas,
+              0,
+              renderedHeight,
+              canvas.width,
+              sliceHeight,
+              0,
+              0,
+              canvas.width,
+              sliceHeight
+            );
+          }
+
+          const pageImgData = pageCanvas.toDataURL('image/png');
+          const sliceHeightMm = (sliceHeight * contentWidth) / canvas.width;
+
+          if (pageIndex > 0) {
+            targetPdf.addPage();
+          }
+
+          targetPdf.addImage(pageImgData, 'PNG', marginX, contentTop, contentWidth, sliceHeightMm);
+
+          renderedHeight += sliceHeight;
+          pageIndex += 1;
+        }
+      };
+
+      PDF_COPIES.forEach((copyLabel, copyIndex) => {
+        if (copyIndex > 0) {
+          pdf.addPage();
+        }
+
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(8, 8, pageWidth - 16, 10, 'F');
+        pdf.setDrawColor(148, 163, 184);
+        pdf.rect(8, 8, pageWidth - 16, 10);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(copyLabel, pageWidth / 2, 14, { align: 'center' });
+
+        drawInvoiceImage(pdf);
       }
+      );
 
       pdf.save(`INV-${invoice.invoiceNumber}.pdf`);
     } catch (error) {
