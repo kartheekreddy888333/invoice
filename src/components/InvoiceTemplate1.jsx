@@ -130,13 +130,7 @@ export default function InvoiceTemplate1({ invoice, company = {} }) {
 
       {/* Footer */}
       <div className="border-t-2 border-gray-400 pt-2 text-xs">
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="font-bold mb-1">Bank Details:</p>
-            <p>{seller.bankName}</p>
-            <p>A/C: {seller.accountNumber}</p>
-            <p>IFSC: {seller.ifscCode}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-6">
           <div className="text-center">
             <p className="font-bold mb-1">Terms & Conditions:</p>
             <p>{invoice.notes || 'Thank you for your business'}</p>

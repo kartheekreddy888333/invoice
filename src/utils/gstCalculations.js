@@ -103,8 +103,14 @@ export const amountInWords = (amount) => {
   return words;
 };
 
-export const generateInvoiceNumber = () => {
-  const year = new Date().getFullYear();
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `INV-${year}-${random}`;
+// Generates the next plain invoice number: 1, 2, 3, etc.
+// Older invoice formats are ignored so changing the format cannot create an
+// unexpected jump in the new numeric sequence.
+export const generateInvoiceNumber = (invoices = []) => {
+  const highestNumber = invoices.reduce((highest, invoice) => {
+    const value = String(invoice?.invoiceNumber ?? '').trim();
+    return /^\d+$/.test(value) ? Math.max(highest, Number(value)) : highest;
+  }, 0);
+
+  return String(highestNumber + 1);
 };

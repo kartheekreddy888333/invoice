@@ -1,14 +1,14 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+// @ts-nocheck
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FileText, Users, Package, BarChart3, Settings, LogOut, Menu, X, TrendingUp, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useState } from 'react';
 
-export default function Sidebar({ onClose }) {
+export default function Sidebar({ isCollapsed, onToggleCollapse }) {
   const location = useLocation();
-  const { darkMode, setDarkMode } = useApp();
+  const navigate = useNavigate();
+  const { darkMode, setDarkMode, company, logout } = useApp();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,7 +22,7 @@ export default function Sidebar({ onClose }) {
     { path: '/company', label: 'Settings', icon: Settings },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (/** @type {string} */ path) => location.pathname === path;
 
   return (
     <>
@@ -38,7 +38,7 @@ export default function Sidebar({ onClose }) {
       {/* Desktop Collapse Button */}
       <button
         className="hidden md:block absolute top-6 right-2 lg:right-6 z-50 p-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={onToggleCollapse}
         aria-label="Toggle sidebar"
       >
         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -46,8 +46,9 @@ export default function Sidebar({ onClose }) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 z-40 overflow-y-auto
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-all duration-300 z-40 overflow-y-auto
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:translate-x-0
           ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64`}
       >
         {/* Logo Section */}
@@ -60,6 +61,7 @@ export default function Sidebar({ onClose }) {
               <div>
                 <h1 className="font-bold text-lg text-gray-900 dark:text-white">GST Invoice</h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Generator</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[13rem]">{company?.companyName}</p>
               </div>
             )}
           </div>
@@ -94,7 +96,15 @@ export default function Sidebar({ onClose }) {
           >
             {isCollapsed ? (darkMode ? '☀️' : '🌙') : (darkMode ? '☀️ Light Mode' : '🌙 Dark Mode')}
           </button>
-          <button className={`w-full px-3 sm:px-4 py-2 sm:py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2 ${isCollapsed ? 'md:px-2 md:justify-center' : 'justify-center'}`} title={isCollapsed ? 'Logout' : ''}>
+          <button
+            onClick={() => {
+              logout();
+              setIsMobileMenuOpen(false);
+              navigate('/login', { replace: true });
+            }}
+            className={`w-full px-3 sm:px-4 py-2 sm:py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-xs sm:text-sm font-medium flex items-center gap-2 ${isCollapsed ? 'md:px-2 md:justify-center' : 'justify-center'}`}
+            title={isCollapsed ? 'Logout' : ''}
+          >
             <LogOut size={16} />
             {!isCollapsed && 'Logout'}
           </button>

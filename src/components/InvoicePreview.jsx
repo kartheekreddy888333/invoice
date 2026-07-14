@@ -79,63 +79,19 @@ export default function InvoicePreview({ invoice }) {
 
       const drawInvoiceImage = (targetPdf) => {
         const marginX = 8;
-        const labelTop = 8;
-        const labelHeight = 8;
-        const contentTop = labelTop + labelHeight + 2;
+        const topMargin = 18;
+        const bottomMargin = 8;
         const contentWidth = pageWidth - marginX * 2;
-        const contentHeight = pageHeight - contentTop - 8;
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        const contentHeight = pageHeight - topMargin - bottomMargin;
+        const widthScale = contentWidth / canvas.width;
+        const heightScale = contentHeight / canvas.height;
+        const scale = Math.min(widthScale, heightScale);
+        const drawWidth = canvas.width * scale;
+        const drawHeight = canvas.height * scale;
+        const x = marginX + ((contentWidth - drawWidth) / 2);
+        const y = topMargin + ((contentHeight - drawHeight) / 2);
 
-        targetPdf.setFontSize(11);
-        targetPdf.setFont('helvetica', 'bold');
-        targetPdf.setTextColor(30, 41, 59);
-
-        if (imgHeight <= contentHeight) {
-          const y = contentTop + ((contentHeight - imgHeight) / 2);
-          targetPdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginX, y, contentWidth, imgHeight);
-          return;
-        }
-
-        const pageHeightPx = Math.floor((canvas.width * contentHeight) / contentWidth);
-        let renderedHeight = 0;
-        let pageIndex = 0;
-
-        while (renderedHeight < canvas.height) {
-          const pageCanvas = document.createElement('canvas');
-          const pageCtx = pageCanvas.getContext('2d');
-          const sliceHeight = Math.min(pageHeightPx, canvas.height - renderedHeight);
-
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceHeight;
-
-          if (pageCtx) {
-            pageCtx.fillStyle = '#ffffff';
-            pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-            pageCtx.drawImage(
-              canvas,
-              0,
-              renderedHeight,
-              canvas.width,
-              sliceHeight,
-              0,
-              0,
-              canvas.width,
-              sliceHeight
-            );
-          }
-
-          const pageImgData = pageCanvas.toDataURL('image/png');
-          const sliceHeightMm = (sliceHeight * contentWidth) / canvas.width;
-
-          if (pageIndex > 0) {
-            targetPdf.addPage();
-          }
-
-          targetPdf.addImage(pageImgData, 'PNG', marginX, contentTop, contentWidth, sliceHeightMm);
-
-          renderedHeight += sliceHeight;
-          pageIndex += 1;
-        }
+        targetPdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, drawWidth, drawHeight);
       };
 
       PDF_COPIES.forEach((copyLabel, copyIndex) => {

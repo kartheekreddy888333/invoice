@@ -1,16 +1,90 @@
-// @ts-nocheck
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
-const AppContext = createContext();
+type CompanyId = 'k2c' | 'mangupro';
 
-const DEFAULT_COMPANY_ID = 'k2c';
+type CompanyProfile = {
+  companyName: string;
+  gstin: string;
+  panNumber: string;
+  address: string;
+  state: string;
+  stateCode: string;
+  email: string;
+  mobile: string;
+  logo: string;
+  bankName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId: string;
+  website: string;
+};
 
-export const COMPANY_OPTIONS = [
+type CompanyOption = {
+  id: CompanyId;
+  label: string;
+  shortLabel: string;
+};
+
+type Customer = Record<string, unknown>;
+type Product = Record<string, unknown>;
+type Invoice = Record<string, unknown>;
+type StockMovement = Record<string, unknown>;
+type HsnCode = { code: string; category: string; gstRate: number };
+
+type Notification = {
+  id: number;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+};
+
+type AppContextValue = {
+  darkMode: boolean;
+  setDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
+  activeCompanyId: CompanyId | null;
+  isAuthenticated: boolean;
+  companyOptions: CompanyOption[];
+  company: CompanyProfile;
+  setCompany: React.Dispatch<React.SetStateAction<CompanyProfile>>;
+  customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
+  products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  invoices: Invoice[];
+  setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
+  hsnCodes: HsnCode[];
+  setHsnCodes: React.Dispatch<React.SetStateAction<HsnCode[]>>;
+  stockMovements: StockMovement[];
+  setStockMovements: React.Dispatch<React.SetStateAction<StockMovement[]>>;
+  notifications: Notification[];
+  addNotification: (message: string, type?: Notification['type'], duration?: number) => void;
+  removeNotification: (id: number) => void;
+  deductStock: (invoiceItems: Array<{ productId: string; quantity: number }>) => void;
+  recordStockMovement: (movement: Record<string, unknown>) => void;
+  getLowStockAlerts: () => Product[];
+  getOutOfStockProducts: () => Product[];
+  calculateProductProfit: (product: Product, quantity: number) => number;
+  calculateInvoiceProfit: (invoiceItems: Array<{ productId: string; quantity: number }>) => number;
+  getTotalRevenue: () => number;
+  getTotalProfit: () => number;
+  getTotalOutstanding: () => number;
+  getOutstandingByCustomer: (customerId: string) => number;
+  updatePaymentStatus: (invoiceId: string, status: string, paidAmount?: number) => void;
+  getInvoicesByCustomer: (customerId: string) => Invoice[];
+  getCustomerTotalPurchases: (customerId: string) => number;
+  login: (companyId: CompanyId) => void;
+  logout: () => void;
+};
+
+const AppContext = createContext<AppContextValue | undefined>(undefined);
+
+const DEFAULT_COMPANY_ID: CompanyId = 'k2c';
+
+export const COMPANY_OPTIONS: CompanyOption[] = [
   { id: 'k2c', label: 'K2C Agro Tech India Private Limited', shortLabel: 'K2C Agro Tech' },
   { id: 'mangupro', label: 'Mangupro Private Limited', shortLabel: 'Mangupro' },
 ];
 
-const COMPANY_PROFILES = {
+const COMPANY_PROFILES: Record<CompanyId, CompanyProfile> = {
   k2c: {
     companyName: 'K2C AGRO TECH INDIA PRIVATE LIMITED',
     gstin: '29AAFCU5055K1Z0',
@@ -52,28 +126,28 @@ const COMPANY_STORAGE_KEYS = {
   invoices: 'invoices',
   stockMovements: 'stockMovements',
   hsnCodes: 'hsnCodes',
-};
+} as const;
 
-const getCompanyProfile = (companyId) => COMPANY_PROFILES[companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
+const getCompanyProfile = (companyId: CompanyId): CompanyProfile => COMPANY_PROFILES[companyId] || COMPANY_PROFILES[DEFAULT_COMPANY_ID];
 
-const getStorageKey = (companyId, key) => `${companyId}:${key}`;
+const getStorageKey = (companyId: CompanyId, key: string): string => `${companyId}:${key}`;
 
-const readJson = (key, fallback) => {
+const readJson = <T,>(key: string, fallback: T): T => {
   const saved = localStorage.getItem(key);
   if (!saved) return fallback;
 
   try {
-    return JSON.parse(saved);
+    return JSON.parse(saved) as T;
   } catch {
     return fallback;
   }
 };
 
-const readCompanyJson = (companyId, key, fallback) => {
+const readCompanyJson = <T,>(companyId: CompanyId, key: string, fallback: T): T => {
   const namespacedValue = localStorage.getItem(getStorageKey(companyId, key));
   if (namespacedValue) {
     try {
-      return JSON.parse(namespacedValue);
+      return JSON.parse(namespacedValue) as T;
     } catch {
       return fallback;
     }
@@ -86,7 +160,7 @@ const readCompanyJson = (companyId, key, fallback) => {
   return fallback;
 };
 
-const writeCompanyJson = (companyId, key, value) => {
+const writeCompanyJson = <T,>(companyId: CompanyId, key: string, value: T): void => {
   localStorage.setItem(getStorageKey(companyId, key), JSON.stringify(value));
 
   if (companyId === DEFAULT_COMPANY_ID) {
@@ -94,9 +168,7 @@ const writeCompanyJson = (companyId, key, value) => {
   }
 };
 
-const DEFAULT_COMPANY = getCompanyProfile(DEFAULT_COMPANY_ID);
-
-const getDefaultProducts = () => ([
+const getDefaultProducts = (): Product[] => ([
   {
     id: 'prod-001',
     productName: 'Banganapalli Mango',
@@ -184,18 +256,18 @@ const getDefaultProducts = () => ([
   }
 ]);
 
-const getDefaultState = (companyId) => {
+const getDefaultState = (companyId: CompanyId) => {
   const profile = getCompanyProfile(companyId);
 
   return {
     company: profile,
-    customers: [],
+    customers: [] as Customer[],
     products: getDefaultProducts(),
-    invoices: [],
-    stockMovements: [],
+    invoices: [] as Invoice[],
+    stockMovements: [] as StockMovement[],
     hsnCodes: [
       { code: '08045020', category: 'Mango', gstRate: 5 },
-    ],
+    ] as HsnCode[],
   };
 };
 
@@ -207,52 +279,53 @@ export const useApp = () => {
   return context;
 };
 
-export const AppProvider = ({ children }) => {
+type AppProviderProps = { children: ReactNode };
+
+export const AppProvider = ({ children }: AppProviderProps) => {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
-  const [activeCompanyId, setActiveCompanyId] = useState(() => {
+  const [activeCompanyId, setActiveCompanyId] = useState<CompanyId | null>(() => {
     const saved = localStorage.getItem('activeCompanyId');
-    return saved || null;
+    return saved === 'k2c' || saved === 'mangupro' ? saved : null;
   });
 
-  const activeTenantId = activeCompanyId || DEFAULT_COMPANY_ID;
+  const activeTenantId: CompanyId = activeCompanyId || DEFAULT_COMPANY_ID;
 
-  const [company, setCompany] = useState(() => {
+  const [company, setCompany] = useState<CompanyProfile>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.company, defaults.company);
   });
 
-  const [customers, setCustomers] = useState(() => {
+  const [customers, setCustomers] = useState<Customer[]>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.customers, defaults.customers);
   });
 
-  const [products, setProducts] = useState(() => {
+  const [products, setProducts] = useState<Product[]>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.products, defaults.products);
   });
 
-  const [invoices, setInvoices] = useState(() => {
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.invoices, defaults.invoices);
   });
 
-  const [stockMovements, setStockMovements] = useState(() => {
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.stockMovements, defaults.stockMovements);
   });
 
-  const [hsnCodes, setHsnCodes] = useState(() => {
+  const [hsnCodes, setHsnCodes] = useState<HsnCode[]>(() => {
     const defaults = getDefaultState(activeTenantId);
     return readCompanyJson(activeTenantId, COMPANY_STORAGE_KEYS.hsnCodes, defaults.hsnCodes);
   });
 
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     if (darkMode) {
@@ -292,7 +365,7 @@ export const AppProvider = ({ children }) => {
     writeCompanyJson(activeCompanyId, COMPANY_STORAGE_KEYS.hsnCodes, hsnCodes);
   }, [activeCompanyId, hsnCodes]);
 
-  const loadCompanyData = (companyId) => {
+  const loadCompanyData = (companyId: CompanyId) => {
     const defaults = getDefaultState(companyId);
 
     setCompany(readCompanyJson(companyId, COMPANY_STORAGE_KEYS.company, defaults.company));
@@ -303,8 +376,8 @@ export const AppProvider = ({ children }) => {
     setHsnCodes(readCompanyJson(companyId, COMPANY_STORAGE_KEYS.hsnCodes, defaults.hsnCodes));
   };
 
-  const login = (companyId) => {
-    const selectedCompanyId = COMPANY_PROFILES[companyId] ? companyId : DEFAULT_COMPANY_ID;
+  const login = (companyId: CompanyId) => {
+    const selectedCompanyId: CompanyId = COMPANY_PROFILES[companyId] ? companyId : DEFAULT_COMPANY_ID;
     localStorage.setItem('activeCompanyId', selectedCompanyId);
     setActiveCompanyId(selectedCompanyId);
     loadCompanyData(selectedCompanyId);
@@ -315,35 +388,33 @@ export const AppProvider = ({ children }) => {
     setActiveCompanyId(null);
   };
 
-  const addNotification = (message, type = 'info', duration = 3000) => {
+  const addNotification = (message: string, type: Notification['type'] = 'info', duration = 3000) => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
     if (duration) {
       setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        setNotifications(prev => prev.filter(notification => notification.id !== id));
       }, duration);
     }
   };
 
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const removeNotification = (id: number) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
-  // ====== INVENTORY MANAGEMENT FUNCTIONS ======
-
-  const deductStock = (invoiceItems) => {
+  const deductStock = (invoiceItems: Array<{ productId: string; quantity: number }>) => {
     const updatedProducts = products.map(product => {
-      const itemInInvoice = invoiceItems.find(item => item.productId === product.id);
+      const itemInInvoice = invoiceItems.find(item => item.productId === (product as { id?: string }).id);
       if (itemInInvoice) {
-        const newStock = product.currentStock - itemInInvoice.quantity;
-        // Track stock movement
+        const currentStock = Number((product as { currentStock?: number }).currentStock || 0);
+        const newStock = currentStock - itemInInvoice.quantity;
         recordStockMovement({
-          productId: product.id,
-          productName: product.productName,
+          productId: (product as { id?: string }).id,
+          productName: (product as { productName?: string }).productName,
           type: 'deduction',
           quantity: itemInInvoice.quantity,
           reason: 'Invoice Sale',
-          balanceBefore: product.currentStock,
+          balanceBefore: currentStock,
           balanceAfter: newStock,
           timestamp: new Date().toISOString()
         });
@@ -354,29 +425,33 @@ export const AppProvider = ({ children }) => {
     setProducts(updatedProducts);
   };
 
-  const recordStockMovement = (movement) => {
+  const recordStockMovement = (movement: Record<string, unknown>) => {
     setStockMovements(prev => [...prev, { id: Date.now(), ...movement }]);
   };
 
   const getLowStockAlerts = () => {
-    return products.filter(p => p.currentStock <= p.minimumStock && p.currentStock > 0);
+    return products.filter(product => {
+      const currentStock = Number((product as { currentStock?: number }).currentStock || 0);
+      const minimumStock = Number((product as { minimumStock?: number }).minimumStock || 0);
+      return currentStock <= minimumStock && currentStock > 0;
+    });
   };
 
   const getOutOfStockProducts = () => {
-    return products.filter(p => p.currentStock === 0);
+    return products.filter(product => Number((product as { currentStock?: number }).currentStock || 0) === 0);
   };
 
-  // ====== ACCOUNTING FUNCTIONS ======
-
-  const calculateProductProfit = (product, quantity) => {
-    const cost = product.purchasePrice * quantity;
-    const revenue = product.sellingPrice * quantity;
+  const calculateProductProfit = (product: Product, quantity: number) => {
+    const purchasePrice = Number((product as { purchasePrice?: number }).purchasePrice || 0);
+    const sellingPrice = Number((product as { sellingPrice?: number }).sellingPrice || 0);
+    const cost = purchasePrice * quantity;
+    const revenue = sellingPrice * quantity;
     return revenue - cost;
   };
 
-  const calculateInvoiceProfit = (invoiceItems) => {
+  const calculateInvoiceProfit = (invoiceItems: Array<{ productId: string; quantity: number }>) => {
     return invoiceItems.reduce((total, item) => {
-      const product = products.find(p => p.id === item.productId);
+      const product = products.find(candidate => (candidate as { id?: string }).id === item.productId);
       if (product) {
         return total + calculateProductProfit(product, item.quantity);
       }
@@ -385,57 +460,61 @@ export const AppProvider = ({ children }) => {
   };
 
   const getTotalRevenue = () => {
-    return invoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+    return invoices.reduce((sum, invoice) => sum + Number((invoice as { grandTotal?: number }).grandTotal || 0), 0);
   };
 
   const getTotalProfit = () => {
-    return invoices.reduce((sum, inv) => {
-      const profit = calculateInvoiceProfit(inv.items || []);
+    return invoices.reduce((sum, invoice) => {
+      const profit = calculateInvoiceProfit((invoice as { items?: Array<{ productId: string; quantity: number }> }).items || []);
       return sum + profit;
     }, 0);
   };
 
   const getTotalOutstanding = () => {
     return invoices
-      .filter(inv => inv.paymentStatus === 'unpaid' || inv.paymentStatus === 'partially_paid')
-      .reduce((sum, inv) => sum + (inv.outstandingAmount || inv.grandTotal || 0), 0);
+      .filter(invoice => {
+        const paymentStatus = (invoice as { paymentStatus?: string }).paymentStatus;
+        return paymentStatus === 'unpaid' || paymentStatus === 'partially_paid';
+      })
+      .reduce((sum, invoice) => sum + Number((invoice as { outstandingAmount?: number; grandTotal?: number }).outstandingAmount || (invoice as { grandTotal?: number }).grandTotal || 0), 0);
   };
 
-  const getOutstandingByCustomer = (customerId) => {
+  const getOutstandingByCustomer = (customerId: string) => {
     return invoices
-      .filter(inv => inv.customerId === customerId && (inv.paymentStatus === 'unpaid' || inv.paymentStatus === 'partially_paid'))
-      .reduce((sum, inv) => sum + (inv.outstandingAmount || inv.grandTotal || 0), 0);
+      .filter(invoice => {
+        const paymentStatus = (invoice as { paymentStatus?: string }).paymentStatus;
+        return (invoice as { customerId?: string }).customerId === customerId && (paymentStatus === 'unpaid' || paymentStatus === 'partially_paid');
+      })
+      .reduce((sum, invoice) => sum + Number((invoice as { outstandingAmount?: number; grandTotal?: number }).outstandingAmount || (invoice as { grandTotal?: number }).grandTotal || 0), 0);
   };
 
-  const updatePaymentStatus = (invoiceId, status, paidAmount = 0) => {
-    const updatedInvoices = invoices.map(inv => {
-      if (inv.id === invoiceId) {
-        const grandTotal = inv.grandTotal || 0;
+  const updatePaymentStatus = (invoiceId: string, status: string, paidAmount = 0) => {
+    const updatedInvoices = invoices.map(invoice => {
+      if ((invoice as { id?: string }).id === invoiceId) {
+        const grandTotal = Number((invoice as { grandTotal?: number }).grandTotal || 0);
         const outstandingAmount = status === 'paid' ? 0 : grandTotal - paidAmount;
         return {
-          ...inv,
+          ...invoice,
           paymentStatus: status,
           paidAmount,
           outstandingAmount,
           lastPaymentDate: new Date().toISOString()
         };
       }
-      return inv;
+      return invoice;
     });
     setInvoices(updatedInvoices);
   };
 
-  // ====== INVOICE HELPER FUNCTIONS ======
-
-  const getInvoicesByCustomer = (customerId) => {
-    return invoices.filter(inv => inv.customerId === customerId);
+  const getInvoicesByCustomer = (customerId: string) => {
+    return invoices.filter(invoice => (invoice as { customerId?: string }).customerId === customerId);
   };
 
-  const getCustomerTotalPurchases = (customerId) => {
-    return getInvoicesByCustomer(customerId).reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+  const getCustomerTotalPurchases = (customerId: string) => {
+    return getInvoicesByCustomer(customerId).reduce((sum, invoice) => sum + Number((invoice as { grandTotal?: number }).grandTotal || 0), 0);
   };
 
-  const value = {
+  const value: AppContextValue = {
     darkMode,
     setDarkMode,
     activeCompanyId,
@@ -456,12 +535,10 @@ export const AppProvider = ({ children }) => {
     notifications,
     addNotification,
     removeNotification,
-    // Inventory functions
     deductStock,
     recordStockMovement,
     getLowStockAlerts,
     getOutOfStockProducts,
-    // Accounting functions
     calculateProductProfit,
     calculateInvoiceProfit,
     getTotalRevenue,
@@ -469,10 +546,8 @@ export const AppProvider = ({ children }) => {
     getTotalOutstanding,
     getOutstandingByCustomer,
     updatePaymentStatus,
-    // Invoice helpers
     getInvoicesByCustomer,
     getCustomerTotalPurchases,
-    // Auth helpers
     login,
     logout,
   };

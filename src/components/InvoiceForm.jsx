@@ -16,9 +16,9 @@ const GST_TYPES = [
 ];
 
 export default function InvoiceForm({ invoice, onSave, onCancel }) {
-  const { customers, products, company, deductStock, addNotification } = useApp();
+  const { customers, products, company, invoices, deductStock, addNotification } = useApp();
   const [formData, setFormData] = useState(invoice || {
-    invoiceNumber: generateInvoiceNumber(),
+    invoiceNumber: generateInvoiceNumber(invoices),
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     customerId: '',
@@ -178,9 +178,12 @@ export default function InvoiceForm({ invoice, onSave, onCancel }) {
         <Input
           label="Invoice #"
           name="invoiceNumber"
+          type="number"
+          min="1"
+          step="1"
           value={formData.invoiceNumber}
           onChange={handleChange}
-          disabled
+          required
         />
         <Input
           label="Invoice Date"

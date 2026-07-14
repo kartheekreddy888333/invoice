@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// @ts-nocheck
+import React, { useEffect, useState } from 'react';
 import { Upload, Save } from 'lucide-react';
 import Card from '../components/Card';
 import Layout from '../components/Layout';
@@ -45,26 +46,32 @@ const STATES = [
   { value: '36', label: 'Ladakh' },
 ];
 
-export default function CompanySettings() {
-  const { company, setCompany, addNotification } = useApp();
-  const [formData, setFormData] = useState(company || {
-    companyName: 'K2C AGRO TECH INDIA PRIVATE LIMITED',
-    gstin: '29AAFCU5055K1Z0',
-    panNumber: 'AAFCU5055K',
-    address: 'Plot No. 123, Agro Tech Park, Pune, Maharashtra - 411057',
-    state: 'Maharashtra',
-    stateCode: '14',
-    email: 'contact@k2cagro.com',
-    mobile: '+91-9876543210',
-    logo: '',
-    bankName: 'State Bank of India',
-    accountNumber: '12345678901234',
-    ifscCode: 'SBIN0001234',
-    upiId: 'k2cagro@sbi',
-    website: 'www.k2cagro.com'
-  });
+const getDefaultCompanyData = () => ({
+  companyName: 'K2C AGRO TECH INDIA PRIVATE LIMITED',
+  gstin: '37AAMCK2090D1ZJ',
+  panNumber: 'AAFCU5055K',
+  address: 'Plot No. 123, Agro Tech Park, Pune, Maharashtra - 411057',
+  state: 'Maharashtra',
+  stateCode: '14',
+  email: 'contact@k2cagro.com',
+  mobile: '+91-9876543210',
+  logo: '',
+  bankName: 'State Bank of India',
+  accountNumber: '12345678901234',
+  ifscCode: 'SBIN0001234',
+  upiId: 'k2cagro@sbi',
+  website: 'www.k2cagro.com',
+});
 
-  const [loading, setLoading] = useState(false);
+export default function CompanySettings() {
+  const { company, setCompany, addNotification, companyOptions, activeCompanyId } = useApp();
+  const [formData, setFormData] = useState(company || getDefaultCompanyData());
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    setFormData(company || getDefaultCompanyData());
+    setIsEditing(false);
+  }, [company, activeCompanyId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,15 +105,22 @@ export default function CompanySettings() {
     }
   };
 
+  const handleStartEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setFormData(company || getDefaultCompanyData());
+    setIsEditing(false);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!isEditing) return;
 
-    setTimeout(() => {
-      setCompany(formData);
-      setLoading(false);
-      addNotification('Company settings saved successfully!', 'success');
-    }, 500);
+    setCompany(formData);
+    setIsEditing(false);
+    addNotification('Company settings saved successfully!', 'success');
   };
 
   return (
@@ -115,6 +129,23 @@ export default function CompanySettings() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Company Settings</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your company information</p>
+          <p className="text-sm text-primary-600 dark:text-primary-400 mt-1 font-medium">
+            Active profile: {companyOptions.find(option => option.id === activeCompanyId)?.label || company?.companyName}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            {!isEditing ? (
+              <Button type="button" variant="outline" onClick={handleStartEdit}>
+                Edit Settings
+              </Button>
+            ) : (
+              <>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Editing enabled. Save to keep these changes permanently.</span>
+                <Button type="button" variant="secondary" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -127,13 +158,14 @@ export default function CompanySettings() {
                 </div>
               )}
               <div>
-                <label className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer transition-colors">
+                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${isEditing ? 'bg-primary-600 text-white hover:bg-primary-700 cursor-pointer' : 'bg-gray-300 text-gray-600 dark:bg-gray-700 dark:text-gray-300 cursor-not-allowed'}`}>
                   <Upload size={18} />
                   Upload Logo
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleLogoUpload}
+                    disabled={!isEditing}
                     className="hidden"
                   />
                 </label>
@@ -152,6 +184,7 @@ export default function CompanySettings() {
                 onChange={handleChange}
                 placeholder="Enter company name"
                 required
+                disabled={!isEditing}
               />
               <Input
                 label="GSTIN"
@@ -160,6 +193,7 @@ export default function CompanySettings() {
                 onChange={handleChange}
                 placeholder="Enter GSTIN"
                 required
+                disabled={!isEditing}
               />
               <Input
                 label="PAN Number"
@@ -167,6 +201,7 @@ export default function CompanySettings() {
                 value={formData.panNumber}
                 onChange={handleChange}
                 placeholder="Enter PAN"
+                disabled={!isEditing}
               />
               <Select
                 label="State"
@@ -175,6 +210,7 @@ export default function CompanySettings() {
                 onChange={handleStateChange}
                 options={STATES}
                 required
+                disabled={!isEditing}
               />
               <Input
                 label="Email"
@@ -183,6 +219,7 @@ export default function CompanySettings() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter email"
+                disabled={!isEditing}
               />
               <Input
                 label="Mobile"
@@ -191,6 +228,7 @@ export default function CompanySettings() {
                 value={formData.mobile}
                 onChange={handleChange}
                 placeholder="Enter mobile number"
+                disabled={!isEditing}
               />
               <Input
                 label="Website"
@@ -199,6 +237,7 @@ export default function CompanySettings() {
                 value={formData.website}
                 onChange={handleChange}
                 placeholder="Enter website URL"
+                disabled={!isEditing}
               />
             </div>
             <div className="mt-4">
@@ -208,55 +247,23 @@ export default function CompanySettings() {
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="Enter full address"
-              />
-            </div>
-          </Card>
-
-          {/* Bank Details */}
-          <Card title="Bank Details">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Bank Name"
-                name="bankName"
-                value={formData.bankName}
-                onChange={handleChange}
-                placeholder="Enter bank name"
-              />
-              <Input
-                label="Account Number"
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleChange}
-                placeholder="Enter account number"
-              />
-              <Input
-                label="IFSC Code"
-                name="ifscCode"
-                value={formData.ifscCode}
-                onChange={handleChange}
-                placeholder="Enter IFSC code"
-              />
-              <Input
-                label="UPI ID"
-                name="upiId"
-                value={formData.upiId}
-                onChange={handleChange}
-                placeholder="Enter UPI ID"
+                disabled={!isEditing}
               />
             </div>
           </Card>
 
           {/* Submit */}
-          <div className="flex gap-4">
-            <Button
-              type="submit"
-              loading={loading}
-              icon={Save}
-              fullWidth
-            >
-              Save Settings
-            </Button>
-          </div>
+          {isEditing && (
+            <div className="flex gap-4">
+              <Button
+                type="submit"
+                icon={Save}
+                fullWidth
+              >
+                Save Settings
+              </Button>
+            </div>
+          )}
         </form>
       </div>
     </Layout>
