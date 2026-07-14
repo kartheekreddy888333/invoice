@@ -213,15 +213,7 @@ export default function InvoiceTemplate3({ invoice, company = {} }) {
       </div>
 
       {/* Footer */}
-      <div className="border-t-4 border-gray-900 pt-4 grid grid-cols-3 gap-4 text-xs">
-        <div>
-          <p className="font-bold mb-2">Bank Details:</p>
-           <div><strong>Bank Name:</strong> {seller.bankName}</div>
-           <div><strong>Account No:</strong> {seller.accountNumber}</div>
-           <div><strong>IFSC:</strong> {seller.ifscCode}</div>
-           <div><strong>Branch:</strong> {seller.branch}</div>
-           <div><strong>UPI:</strong> {seller.upiId}</div>
-        </div>
+      <div className="border-t-4 border-gray-900 pt-4 grid grid-cols-2 gap-6 text-xs">
         <div className="text-center">
           <p className="font-bold mb-2">Declaration:</p>
           <p className="text-gray-700 text-xs">{invoice.notes || 'We declare that this invoice shows the actual price of the goods/services described and that all particulars have been truly and correctly shown.'}</p>
